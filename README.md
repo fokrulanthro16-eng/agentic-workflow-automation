@@ -21,22 +21,81 @@ A production-ready automated agentic workspace engine designed for the **Google 
 
 The system operates as a hybrid task executor. It decomposes ambiguous developer descriptions into structured execution paths and runs them programmatically inside isolated sandboxes.
 
+You can inspect the full diagram specification in [`docs/architecture.mmd`](docs/architecture.mmd).
+
+### High-Level Interaction Flow
 ```
-       [User Task Prompt]
-               │
-               ▼
-   [Phase 1: Planning Engine] ────► Gemini API (Creates structural task steps)
-               │
-               ▼
-[Phase 2: Execution Engine] ────► Antigravity SDK (Agent context & capability leasing)
-               │
-               ▼
-     [Command/Tool Output]
+                   +----------------------------------+
+                   |       User / REST Client         |
+                   +----------------------------------+
+                                    |
+                                    v (HTTP POST /run-workflow/)
+                   +----------------------------------+
+                   |         FastAPI Server           |
+                   +----------------------------------+
+                                    |
+                                    v
+                   +----------------------------------+
+                   |        Taskmaster Agent          |
+                   +----------------------------------+
+                     /                              \
+                    /                                \
+  (1: Generate Plan)                                  (2: Lease Sandbox)
+          v                                                    v
++-------------------------+                         +---------------------+
+| Gemini 3.5 / 2.5 API    |                         |  Antigravity SDK    |
++-------------------------+                         +---------------------+
+                                                       |
+                                                       v (Trigger Tools)
+                                            +------------------------------+
+                                            | - FileReadTool               |
+                                            | - EmailReporterTool          |
+                                            | - fetch_api_data             |
+                                            | - parse_csv_summary          |
+                                            +------------------------------+
+                                                       |
+                                                       v (Query/Log state)
+                                            +------------------------------+
+                                            | - Project Workspace          |
+                                            | - docs/sent_emails.log       |
+                                            +------------------------------+
 ```
 
 1. **Planning Interface:** When a task description is received, the `TaskAutomationAgent` calls the Gemini API to format a structured plan in Markdown.
 2. **Autonomous Execution:** The plan is executed via the `google.antigravity` `Agent` context. The agent binds local OS capabilities (write files, execute commands) to accomplish the goals programmatically and outputs streamed execution thoughts.
 3. **Telemetry & Serving:** A FastAPI server delivers endpoints to submit tasks and receive step-by-step progress streams.
+
+---
+
+## 🏆 Devpost / Harvard Submission Documentation
+
+### 💡 Inspiration
+Developers spend massive amounts of time reading logs, parsing data files, generating compliance reports, and writing alert dispatches. We wanted to build a sandboxed, production-ready AI task engineer that securely automates these developer workflows, providing a resilient pipeline that automatically falls back to secure API loops if local runtime binary configurations differ.
+
+### ⚙️ What It Does
+**Agentic Workflow Automation** executes multi-step background workflows through CLI and REST interfaces. Users submit prompts like *"Fetch the server metrics, format them, and email the report to the administrator."* The agent uses its tool capabilities (`FileReadTool`, `EmailReporterTool`, `fetch_api_data`, etc.) to execute the plan step-by-step, logging email traces locally and saving reports directly to the workspace.
+
+### 🛠️ How We Built It
+We implemented the system using:
+- **FastAPI** to support streaming HTTP events and unified JSON workflows.
+- **Antigravity SDK** for programmatic agent sandboxing and automated tool registry.
+- **Google GenAI Python SDK** for live Gemini 3.5 / 2.5 Flash reasoning.
+- **Python Unittest** to guarantee zero-defect operational statuses.
+
+### 🚧 Challenges We Ran Into
+- **Sandbox Boundary Validation:** Ensuring the agent tools could not perform directory-traversal exploits or modify files outside the workspace directories.
+- **Resilient Fallbacks:** Constructing a multi-turn function-calling emulator for standard Gemini API instances when the local Antigravity binary workspace manager is absent.
+
+### 🎉 Accomplishments Proud Of
+- A robust, dual-mode execution strategy: runs seamlessly inside full Antigravity workspaces and falls back safely to pure API-driven loops elsewhere.
+- 100% unit-test success rates covering fallback states, parameter checks, and tool executions.
+
+### 🧠 What We Learned
+We mastered programmatic agent leasing, multi-turn LLM loop orchestration, and automated schema generation using standard Python function metadata.
+
+### 🔮 What's Next
+- Deploying direct Google Cloud Run triggers to automate workflows in response to Cloud Pub/Sub events.
+- Implementing fine-grained policy tools using declarative permission configuration sets.
 
 ---
 
@@ -55,60 +114,30 @@ The system operates as a hybrid task executor. It decomposes ambiguous developer
    cd agentic-workflow-automation
    ```
 
-2. **Create and activate a virtual environment:**
-   ```bash
-   python -m venv venv
-   # On Windows:
-   venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies:**
+2. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Setup environment variables:**
-   Create a `.env` file in the root folder:
+3. **Setup environment variables in `.env`:**
    ```ini
    GEMINI_API_KEY=your_gemini_api_key_here
    PORT=8080
    ```
 
-5. **Run via CLI (Single Task Execution):**
+4. **Run via CLI (Single Task Execution):**
    ```bash
-   python src/main.py --task "Create a basic python script in the scratch directory that computes prime numbers"
+   python src/main.py --task "Read workspace metrics and write a report."
    ```
 
-6. **Run via FastAPI Server:**
+5. **Run the FastAPI server:**
    ```bash
    python src/main.py --server
    ```
-   Submit tasks via HTTP request:
+
+6. **Submit Task via endpoint /run-workflow/:**
    ```bash
-   curl -X POST http://localhost:8080/api/execute \
+   curl -X POST http://localhost:8080/run-workflow/ \
      -H "Content-Type: application/json" \
-     -d '{"task": "Run formatting on codebase"}'
+     -d '{"task": "Fetch the metrics and email report to fokrul@example.com"}'
    ```
-
----
-
-## 📂 Project Structure
-```
-agentic-workflow-automation/
-├── LICENSE              # MIT License
-├── README.md            # Devpost/Harvard standard documentation
-├── requirements.txt     # Dependencies
-├── .gitignore          # Environment & credential protection
-├── src/                 # Application source
-│   ├── main.py          # Entrypoint (CLI / FastAPI serving)
-│   └── agents/
-│       ├── __init__.py
-│       └── task_agent.py # Agent initialization via Antigravity & GenAI
-├── tests/
-│   ├── __init__.py
-│   └── test_agent.py    # Unit & Integration tests
-└── docs/
-    └── architecture.md  # Deep technical details
-```

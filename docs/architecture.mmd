@@ -1,0 +1,33 @@
+graph TD
+    classDef main fill:#1a1c23,stroke:#00f2fe,stroke-width:2px,color:#fff;
+    classDef service fill:#101423,stroke:#4facfe,stroke-width:1px,color:#a0aec0;
+    classDef storage fill:#0a0c10,stroke:#ff9f43,stroke-width:1px,color:#f5f6fa;
+    
+    User([User / REST Client]) -->|HTTP POST /run-workflow/| Server[FastAPI Server]:::main
+    Server -->|Instantiate Agent| TaskAgent[Taskmaster Agent]:::main
+    
+    subgraph Core AI & Execution Layer
+        TaskAgent -->|1: Generate Technical Plan| Gemini[Gemini 3.5 / 2.5 Flash API]:::service
+        TaskAgent -->|2: Lease Sandboxed Sandbox| SDK[Antigravity SDK / ADK]:::main
+    end
+
+    subgraph Capability Tools Map
+        SDK -->|Call Local Files| FileRead[FileReadTool]:::service
+        SDK -->|Simulate Notifications| EmailReport[EmailReporterTool]:::service
+        SDK -->|Retrieve Server State| FetchAPI[fetch_api_data]:::service
+        SDK -->|Analyze Structured Data| ParseCSV[parse_csv_summary]:::service
+    end
+
+    subgraph Infrastructure Workspace
+        FileRead -->|Query Data| Workspace[(Project Workspace)]:::storage
+        EmailReport -->|Log Dispatch Outbox| EmailLog[(docs/sent_emails.log)]:::storage
+        FetchAPI -->|Fetch Mock / HTTPS API| RemoteAPI[Mock Ledger Endpoint]:::service
+    end
+
+    SDK -->|Compile Tokens| FinalResult[Final Markdown Report]:::main
+    FinalResult -->|JSON Payload| Server
+    Server -->|200 OK Response| User
+
+    subgraph Cloud Infrastructure Target
+        Server -.->|Containerized Deployment| CloudRun[Google Cloud Run]:::service
+    end

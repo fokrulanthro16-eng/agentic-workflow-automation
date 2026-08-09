@@ -35,7 +35,6 @@ def read_data_file(filepath: str) -> str:
     """
     logger.info(f"[Tool: read_data_file] Reading path: {filepath}")
     try:
-        # Resolve path relative to project root
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
         target_path = os.path.abspath(os.path.join(base_dir, filepath))
         
@@ -55,6 +54,19 @@ def read_data_file(filepath: str) -> str:
         return f"Error reading file: {str(e)}"
 
 
+def FileReadTool(filepath: str) -> str:
+    """
+    Reads the contents of a local text or CSV file from the project workspace.
+    
+    Args:
+        filepath: The relative path to the target file.
+        
+    Returns:
+        The content of the file as a string.
+    """
+    return read_data_file(filepath)
+
+
 def fetch_api_data(endpoint: str) -> str:
     """
     Fetches JSON data from a remote or mock web API endpoint (e.g., users, products, metrics).
@@ -66,8 +78,6 @@ def fetch_api_data(endpoint: str) -> str:
         The fetched data as a JSON string.
     """
     logger.info(f"[Tool: fetch_api_data] Querying: {endpoint}")
-    
-    # Integrated mock endpoints for hackathon reliability
     mock_endpoints = {
         "users": [
             {"id": 101, "name": "Fokrul Islam", "role": "Principal Systems Engineer"},
@@ -86,13 +96,11 @@ def fetch_api_data(endpoint: str) -> str:
         }
     }
     
-    # Parse parameter to check if matches a mock category
     cleaned_key = endpoint.strip("/").split("/")[-1].lower()
     if cleaned_key in mock_endpoints:
         logger.info(f"[Tool: fetch_api_data] Mock endpoint match: '{cleaned_key}'")
         return json.dumps(mock_endpoints[cleaned_key], indent=2)
 
-    # Otherwise, execute real web fetch
     try:
         if not (endpoint.startswith("http://") or endpoint.startswith("https://")):
             return f"Error: Invalid protocol. Endpoint '{endpoint}' must start with http:// or https://"
@@ -127,11 +135,9 @@ def generate_markdown_report(title: str, content: str, output_path: str) -> str:
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
         target_path = os.path.abspath(os.path.join(base_dir, output_path))
         
-        # Sandbox path validation
         if not target_path.startswith(base_dir):
             return "Error: Security block. Cannot write files outside the project workspace."
 
-        # Create directories if needed
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
 
         report_content = (
@@ -212,8 +218,53 @@ def parse_csv_summary(csv_data: str) -> str:
         return f"Error parsing CSV data: {str(e)}"
 
 
+def EmailReporterTool(recipient_email: str, subject: str, report_body: str) -> str:
+    """
+    Simulates sending an email report and logs the output in the project's outbox ledger.
+    
+    Args:
+        recipient_email: The target recipient's email address.
+        subject: The email subject line.
+        report_body: The detailed content of the report to email.
+        
+    Returns:
+        A success message indicating the email was dispatched and logged.
+    """
+    logger.info(f"[Tool: EmailReporterTool] Dispatched email to {recipient_email} under subject '{subject}'")
+    try:
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+        log_path = os.path.abspath(os.path.join(base_dir, "docs/sent_emails.log"))
+        
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        
+        email_record = (
+            f"=======================================================\n"
+            f"EMAIL DISPATCHED: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            f"To: {recipient_email}\n"
+            f"Subject: {subject}\n"
+            f"Body:\n{report_body}\n"
+            f"=======================================================\n\n"
+        )
+        
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(email_record)
+            
+        logger.info("[Tool: EmailReporterTool] Email logged in docs/sent_emails.log")
+        return f"Success: Email dispatched successfully to {recipient_email} and logged in docs/sent_emails.log."
+    except Exception as e:
+        logger.error(f"[Tool: EmailReporterTool] Dispatch failed: {e}")
+        return f"Error sending email: {str(e)}"
+
+
 # List of exposed custom tools
-EXPOSED_TOOLS = [read_data_file, fetch_api_data, generate_markdown_report, parse_csv_summary]
+EXPOSED_TOOLS = [
+    read_data_file,
+    FileReadTool,
+    fetch_api_data,
+    generate_markdown_report,
+    parse_csv_summary,
+    EmailReporterTool
+]
 
 # --- Taskmaster Agent Orchestration ---
 
@@ -221,13 +272,12 @@ class TaskAutomationAgent:
     def __init__(self, system_instructions: str = None):
         self.system_instructions = system_instructions or (
             "You are the Taskmaster AI Agent, designed to automate complex, multi-step developer workflows.\n"
-            "You are equipped with specialized tools: read_data_file, fetch_api_data, generate_markdown_report, and parse_csv_summary.\n"
+            "You are equipped with tools: FileReadTool, EmailReporterTool, fetch_api_data, generate_markdown_report, and parse_csv_summary.\n"
             "Analyze task prompts, invoke appropriate tools, and draft clear final summaries."
         )
         self.api_key = os.getenv("GEMINI_API_KEY")
         self.client = None
         
-        # Initialize Google GenAI client
         if self.api_key:
             try:
                 self.client = genai.Client(api_key=self.api_key)
@@ -252,7 +302,7 @@ class TaskAutomationAgent:
             f"You are a Principal Software Architect. Draft a step-by-step technical plan to accomplish "
             f"this developer task:\n"
             f"Task: '{task_description}'\n\n"
-            f"Specify which tools (read_data_file, fetch_api_data, generate_markdown_report, parse_csv_summary) are required."
+            f"Specify which tools (FileReadTool, EmailReporterTool, fetch_api_data, generate_markdown_report, parse_csv_summary) are required."
         )
 
         try:
@@ -306,13 +356,14 @@ class TaskAutomationAgent:
         
         tools_map = {
             "read_data_file": read_data_file,
+            "FileReadTool": FileReadTool,
             "fetch_api_data": fetch_api_data,
             "generate_markdown_report": generate_markdown_report,
-            "parse_csv_summary": parse_csv_summary
+            "parse_csv_summary": parse_csv_summary,
+            "EmailReporterTool": EmailReporterTool
         }
 
         try:
-            # Step 1: Initial call with registered tools
             response = self.client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=task_description,
@@ -323,7 +374,6 @@ class TaskAutomationAgent:
                 )
             )
 
-            # Check if Gemini calls a tool
             function_calls = response.function_calls
             if function_calls:
                 tool_results = []
@@ -334,7 +384,6 @@ class TaskAutomationAgent:
                     
                     if name in tools_map:
                         try:
-                            # Execute Python tool locally
                             res = tools_map[name](**args)
                             tool_results.append(f"Tool '{name}' output:\n{res}")
                         except Exception as tool_err:
@@ -342,7 +391,6 @@ class TaskAutomationAgent:
                     else:
                         tool_results.append(f"Tool '{name}' is not supported.")
                 
-                # Step 2: Feed outputs back to Gemini to obtain final report
                 yield "\n[Gemini API] Processing tool outputs to compile final report...\n"
                 compiled_results = "\n\n".join(tool_results)
                 
@@ -363,7 +411,6 @@ class TaskAutomationAgent:
                 yield "\n[Final Agent Report]\n"
                 yield final_res.text
             else:
-                # No tools requested
                 yield "\n[Final Agent Report]\n"
                 yield response.text
 

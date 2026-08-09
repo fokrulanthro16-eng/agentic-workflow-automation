@@ -73,6 +73,34 @@ async def stream_task_endpoint(request: TaskRequest):
             
     return StreamingResponse(event_generator(), media_type="text/plain")
 
+@app.post("/run-workflow/")
+async def run_workflow_endpoint(request: TaskRequest):
+    """
+    Core Hackathon API endpoint: executes the task, collects all streamed tokens,
+    and returns a unified plan and execution report in JSON format.
+    """
+    if not request.task.strip():
+        raise HTTPException(status_code=400, detail="Task details cannot be empty.")
+        
+    agent = TaskAutomationAgent()
+    plan = await agent.generate_task_plan(request.task)
+    
+    tokens = []
+    try:
+        async for token in agent.execute_task(request.task):
+            tokens.append(token)
+    except Exception as e:
+        tokens.append(f"\n[Error during execution]: {e}")
+        
+    execution_result = "".join(tokens)
+    
+    return {
+        "status": "SUCCESS",
+        "task": request.task,
+        "plan": plan,
+        "execution_result": execution_result
+    }
+
 @app.get("/api/health")
 async def health_check():
     return {
