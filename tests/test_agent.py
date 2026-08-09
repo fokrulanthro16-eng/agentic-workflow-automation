@@ -40,8 +40,8 @@ class TestTaskAutomationAgent(unittest.TestCase):
         import asyncio
         plan = asyncio.run(self.agent.generate_task_plan("Test dummy task"))
         
-        self.assertIn("Local Static Plan", plan)
-        self.assertIn("Note: Provide a valid GEMINI_API_KEY", plan)
+        self.assertIn("Default Local Plan", plan)
+        self.assertIn("Provide GEMINI_API_KEY", plan)
 
 if __name__ == "__main__":
     unittest.main()

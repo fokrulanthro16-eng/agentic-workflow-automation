@@ -4,6 +4,7 @@ import os
 import sys
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -22,7 +23,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Standard CORS setups
+# Standard CORS configurations for dashboard access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,7 +38,7 @@ class TaskRequest(BaseModel):
 @app.post("/api/execute")
 async def execute_task_endpoint(request: TaskRequest):
     """
-    HTTP route to draft a planning audit and queue task execution.
+    Non-streaming endpoint: returns the planned checklist for the given task.
     """
     if not request.task.strip():
         raise HTTPException(status_code=400, detail="Task details cannot be empty.")
@@ -49,14 +50,34 @@ async def execute_task_endpoint(request: TaskRequest):
         "status": "PLAN_GENERATED",
         "task": request.task,
         "plan": plan,
-        "execution_notes": "To run this task with active agent execution capabilities, run via CLI: python src/main.py --task '<task>'"
+        "execution_notes": "To run this task with live agent tool-execution streams, use /api/execute/stream"
     }
+
+@app.post("/api/execute/stream")
+async def stream_task_endpoint(request: TaskRequest):
+    """
+    Streaming endpoint: executes the task using the Antigravity SDK / Gemini workflow
+    and streams back the token logs and progress in real time.
+    """
+    if not request.task.strip():
+        raise HTTPException(status_code=400, detail="Task details cannot be empty.")
+        
+    agent = TaskAutomationAgent()
+    
+    async def event_generator():
+        try:
+            async for token in agent.execute_task(request.task):
+                yield token
+        except Exception as e:
+            yield f"\n[HTTP Stream Error]: {str(e)}\n"
+            
+    return StreamingResponse(event_generator(), media_type="text/plain")
 
 @app.get("/api/health")
 async def health_check():
     return {
         "status": "HEALTHY",
-        "sdk_loaded": True
+        "gemini_api_configured": bool(os.getenv("GEMINI_API_KEY"))
     }
 
 async def run_cli(task_desc: str):
@@ -71,11 +92,11 @@ async def run_cli(task_desc: str):
     
     agent = TaskAutomationAgent()
     
-    print("[Taskmaster] Decomposing task requirements using Gemini 3.5 Flash planning engine...")
+    print("[Taskmaster] Decomposing task requirements using Gemini planning engine...")
     plan = await agent.generate_task_plan(task_desc)
     print(f"\n--- Technical Execution Plan ---\n{plan}\n---------------------------------\n")
     
-    print("[Taskmaster] Activating Antigravity SDK agent sandbox container...")
+    print("[Taskmaster] Spawning Taskmaster Agent Sandbox...")
     print("[Taskmaster] Streaming execution output:")
     print("-" * 50)
     
@@ -97,11 +118,14 @@ if __name__ == "__main__":
 
     if args.server:
         port = int(os.getenv("PORT", "8080"))
-        print(f"Starting server at http://0.0.0.0:{port}")
+        print(f"\n=======================================================")
+        print(f"  TASKMASTER API Server starting on port {port}")
+        print(f"  Check API health at http://localhost:{port}/api/health")
+        print(f"=======================================================\n")
         uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
     elif args.task:
         asyncio.run(run_cli(args.task))
     else:
         # Default fallback run
-        demo_task = "Draft a README.md summary for a Python prime factorization script."
+        demo_task = "Fetch the users mock database metrics and generate a Markdown report saved at docs/team_report.md"
         asyncio.run(run_cli(demo_task))
