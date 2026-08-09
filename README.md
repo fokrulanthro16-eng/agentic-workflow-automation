@@ -23,6 +23,8 @@ The system operates as a hybrid task executor. It decomposes ambiguous developer
 
 You can inspect the full diagram specification in [`docs/architecture.mmd`](docs/architecture.mmd).
 
+![Architecture Diagram](docs/architecture.png)
+
 ### High-Level Interaction Flow
 ```
                    +----------------------------------+
