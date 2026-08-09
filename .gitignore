@@ -36,6 +36,7 @@ venv.bak/
 # Environment configurations and secrets
 .env
 .env.*
+!.env.example
 secrets.ini
 
 # Cloud service key files (JSON key files)

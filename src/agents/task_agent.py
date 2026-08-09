@@ -7,7 +7,10 @@ import csv
 from io import StringIO
 from datetime import datetime
 from typing import AsyncGenerator
+from dotenv import load_dotenv
 
+# Load environment configurations dynamically
+load_dotenv()
 # Import Antigravity SDK elements
 try:
     from google.antigravity import Agent, LocalAgentConfig, CapabilitiesConfig

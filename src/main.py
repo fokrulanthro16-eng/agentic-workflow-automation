@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import argparse
 import asyncio
 import os
@@ -7,15 +10,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from dotenv import load_dotenv
 
 # Ensure the parent directory is in the path to find local packages
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from agents.task_agent import TaskAutomationAgent
-
-# Load local .env environment configurations
-load_dotenv()
 
 app = FastAPI(
     title="Taskmaster Agent Automation Engine",
