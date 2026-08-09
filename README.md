@@ -180,6 +180,9 @@ The project is configured for containerized deployment to Google Cloud Run using
 
 The project is pre-configured for serverless deployment on Vercel.
 
+### Active Deployed Service
+* **Live Service URL:** `https://agentic-workflow-automation.vercel.app`
+
 ### Deployment Steps (via Vercel CLI)
 
 1. **Install Vercel CLI:**
