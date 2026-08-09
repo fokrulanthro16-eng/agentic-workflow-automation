@@ -173,3 +173,30 @@ The project is configured for containerized deployment to Google Cloud Run using
 
 3. **Verify Deployment:**
    Once finished, the CLI will output your Service URL. Replace the placeholder URL in this README with your live endpoint.
+
+---
+
+## 📐 Vercel Serverless Deployment
+
+The project is pre-configured for serverless deployment on Vercel.
+
+### Deployment Steps (via Vercel CLI)
+
+1. **Install Vercel CLI:**
+   ```bash
+   npm install -g vercel
+   ```
+
+2. **Authenticate and Deploy:**
+   Run this in the project root:
+   ```bash
+   vercel
+   ```
+   Follow the interactive prompts to link the project. Once configured, navigate to your Vercel Project Dashboard under **Settings -> Environment Variables** and add:
+   * `GEMINI_API_KEY`: Your active Gemini API key
+
+3. **Deploy to Production:**
+   Promote the build:
+   ```bash
+   vercel --prod
+   ```

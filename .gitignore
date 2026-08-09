@@ -44,6 +44,7 @@ secrets.ini
 !composer.json
 !package.json
 !tsconfig.json
+!vercel.json
 
 # IDE configurations
 .vscode/
