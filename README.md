@@ -182,6 +182,7 @@ The project is pre-configured for serverless deployment on Vercel.
 
 ### Active Deployed Service
 * **Live Service URL:** `https://agentic-workflow-automation.vercel.app`
+* **Swagger UI API Documentation:** `https://agentic-workflow-automation.vercel.app/docs`
 
 ### Deployment Steps (via Vercel CLI)
 
