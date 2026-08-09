@@ -151,7 +151,7 @@ We mastered programmatic agent leasing, multi-turn LLM loop orchestration, and a
 The project is configured for containerized deployment to Google Cloud Run using the `gcloud` CLI.
 
 ### Active Deployed Service
-* **Live Service URL:** `https://agentic-workflow-automation-placeholder.a.run.app`
+* **Live Service URL:** `https://agentic-workflow-automation-rf6p775w3a-uc.a.run.app`
 
 ### Deployment Steps (via Cloud SDK Buildpack)
 
