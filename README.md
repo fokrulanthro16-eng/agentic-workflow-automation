@@ -143,3 +143,33 @@ We mastered programmatic agent leasing, multi-turn LLM loop orchestration, and a
      -H "Content-Type: application/json" \
      -d '{"task": "Fetch the metrics and email report to fokrul@example.com"}'
    ```
+
+---
+
+## 🌐 Google Cloud Run Deployment
+
+The project is configured for containerized deployment to Google Cloud Run using the `gcloud` CLI.
+
+### Active Deployed Service
+* **Live Service URL:** `https://agentic-workflow-automation-placeholder.a.run.app`
+
+### Deployment Steps (via Cloud SDK Buildpack)
+
+1. **Authenticate and configure your Google Cloud project:**
+   ```bash
+   gcloud auth login
+   gcloud config set project your-gcp-project-id
+   ```
+
+2. **Deploy the application to Cloud Run:**
+   This command automatically builds the container using Cloud Buildpacks based on the root `Dockerfile` and deploys it:
+   ```bash
+   gcloud run deploy agentic-workflow-automation \
+     --source . \
+     --region us-central1 \
+     --allow-unauthenticated \
+     --set-env-vars="GEMINI_API_KEY=your_actual_gemini_key"
+   ```
+
+3. **Verify Deployment:**
+   Once finished, the CLI will output your Service URL. Replace the placeholder URL in this README with your live endpoint.
